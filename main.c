@@ -140,7 +140,7 @@ int main(void) {
       switch (uart_recv) {
         case 'P':
           // enter programming mode
-          for (i = 32; i != 0xFF; i--) {
+          for (i = 10; i != 0xFF; i--) {
             avrResetUp();
             __delay_cycles(256);
             avrResetDown();
@@ -150,9 +150,12 @@ int main(void) {
             spi_recv = readWriteSpi(0x00);
             if (spi_recv == 0x53) {
               ledOnRed();
+              spi_recv = readWriteSpi(0x00);
               break;
             }
-            spi_recv = readWriteSpi(0x00);
+            else {
+              spi_recv = readWriteSpi(0x00);
+            }
           }
           sendUart(AVR_910_OK);
           break;
@@ -165,6 +168,10 @@ int main(void) {
           readWriteSpi((unsigned char) (address & 0xFF));
           readWriteSpi(data_byte);
           address++;
+
+          if (!page_mode) {
+            __delay_cycles(200);
+          }
           sendUart(AVR_910_OK);
           break;
         case 'c':
@@ -176,6 +183,10 @@ int main(void) {
           readWriteSpi((unsigned char) (address & 0xFF));
           readWriteSpi(data_byte);
           address++;
+
+          if (!page_mode) {
+            __delay_cycles(200);
+          }
           sendUart(AVR_910_OK);
           break;
         case 'R':
@@ -192,7 +203,8 @@ int main(void) {
           break;
         case 'A':
           // load address
-          address = 256 * recvUart();
+          address = recvUart();
+          address = address << 8;
           address += recvUart();
           sendUart(AVR_910_OK);
           break;
@@ -207,6 +219,7 @@ int main(void) {
           break;
         case 'L':
           // exit programming mode
+          //avrResetUp();
           sendUart(AVR_910_OK);
           //ledOffGreen();
           ledOffRed();
@@ -215,11 +228,11 @@ int main(void) {
           // erase chip
           readWriteSpi(0xAC);
           readWriteSpi(0x80);
-          readWriteSpi(0x04);
           readWriteSpi(0x00);
-          __delay_cycles(256);
+          readWriteSpi(0x00);
+          __delay_cycles(200);
           avrResetUp();
-          __delay_cycles(256);
+          __delay_cycles(200);
           avrResetDown();
           sendUart(AVR_910_OK);
           break;
@@ -236,9 +249,22 @@ int main(void) {
             readWriteSpi(i);
             sendUart(readWriteSpi(0x00));
           }
+          /*readWriteSpi(0x50);
+          readWriteSpi(0x00);
+          readWriteSpi(0x00);
+          sendUart(readWriteSpi(0x00));
+          readWriteSpi(0x58);
+          readWriteSpi(0x08);
+          readWriteSpi(0x00);
+          sendUart(readWriteSpi(0x00));*/
           break;
         case 'm':
           // write program memory page
+          readWriteSpi(0x4C);
+          readWriteSpi((unsigned char) (address >> 8));
+          readWriteSpi((unsigned char) (address & 0xFF));
+          readWriteSpi(0x00);
+          __delay_cycles(256);
           sendUart(AVR_910_OK);
           break;
         case ':':
